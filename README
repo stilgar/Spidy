@@ -1,0 +1,76 @@
+Motors will be connected at 1_8-1_11 and 2_0-2_11 pins and 3_0-3_1 pins.
+PC count at 12 Mhz, so we will count 15000 each 1,25 ms.
+Periods of down will be spaced by 0.05 ms of delays (to erase synchronization
+errors). This method has a period of 25 ms.
+Timing Events:
+  0.0	up_1
+  0.9 	down_1 at 0%
+  1.25	up_2
+  2.10	down_1 at 100%
+  2.15	down_2 at 0%
+ ... loop again till 12.10 end of motor 9 ...
+ 12.10	Acquiring Buffer
+ 13.10	End Acquisition Buffer
+ 13.10	up_10
+ ... loop again till 25.20 end of motor 18 ...
+ 25.20	Acquiring Buffer
+ 26.20	End Acquisition Buffer
+ 26.20	up_1 iteration 2
+Error will be at Downing motor at 1.25 ms in proximity of Upping next
+motor. Exactly at (0.35/1.2)% equivalent to 52.5 degree. But this will
+be resolved by using integer degrees.
+Sender is a program that sends a buffer of 9 characters between
+0 degree (DEG_0) and 180 degree (DEG_180). A synchronization character will
+be wrote at the beginning of the frame (CHAR_SFRAME) and at the end of it
+preceding end of line (CHAR_ENDLINE).
+So every line sent will be of 12 characters. Cortex accepts till 14 characters.
+There are commands sender accepts:
+0x30		ready state		CHAR_MREADY
+0x31		start session		CHAR_MSTART
+[0x32		end program		CHAR_MEND	--> (TODO)]
+
+Typical communication session:
+	SPIDY		SENDER
+
+* handshake
+	CHAR_MSTART -->
+	CHAR_MSTART -->
+	CHAR_MSTART -->
+	...
+			<-- CHAR_SSTART
+
+* first 18 degrees (no motor will be moved)
+	CHAR_MREADY -->
+			<-- CHAR_SFRAME [buffer] CHAR_SFRAME CHAR_ENDLINE
+	CHAR_MREADY -->
+			<-- CHAR_SFRAME [buffer] CHAR_SFRAME CHAR_ENDLINE
+	> repeat until 18 commands has been received
+
+* non blocking session
+	CHAR_MREADY -->
+	> moves motors using last 18 commands
+			<-- CHAR_SFRAME [buffer] CHAR_SFRAME CHAR_ENDLINE
+	> saves buffer
+	CHAR_MREADY -->
+	> continues moving motors
+
+* ending session (TODO)
+			<-- CHAR_SEND
+	CHAR_MEND -->
+	> returns to handshake session
+	CHAR_MSTART -->
+	CHAR_MSTART -->
+	CHAR_MSTART -->
+	...
+
+Spidy sends also some control characters that helps out to control the status.
+* CHAR_CBUF will be sent when Spidy saves buffer (DEBUG_LEVEL >= 1)
+* CHAR_CREAD will be sent if Spidy reads succesfully a buffer (DEBUG_LEVEL >= 2)
+* CHAR_CLOOP will be sent if Spidy can't read a buffer (DEBUG_LEVEL >= 3)
+
+(TODO): Sender may build some statistics of how Spidy works.
+(TODO): Sender-thread uses openpm to divide workload between two threds:
+		- first one that reads from stdin and uses the numbers received
+		  to build next commands to be sent
+		- second one that sends a buffer when Spidy ask it
+

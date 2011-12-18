@@ -1,0 +1,176 @@
+#!/usr/bin/wish
+
+# degtorad
+set g(conv) [expr atan(1)/45.0]
+
+# each canvas
+set g(wid) 600
+set g(hei) 500
+
+# size and offset
+set g(xsize) 100
+set g(ysize) 100
+set g(zsize) 50
+
+set g(x0) 200
+set g(y0) 200
+set g(z0) 100
+
+# lengths
+set g(la) 30
+set g(lb) 40
+set g(lc) 60
+
+# motors, all zero
+foreach L {0 1 2 3 4 5} {foreach M {0 1 2} {set m($L$M) 0}}
+
+
+# 4 canvases
+pack [frame .l] -side left
+pack [set c0 [canvas .l.t -width $g(wid) -height $g(hei)]] -side top
+pack [frame .l.sep -height 5 -bg gray30] -side top -fill x
+pack [set c1 [canvas .l.b -width $g(wid) -height $g(hei)]] -side top
+pack [frame .sep -width 5 -bg gray30] -side left -fill y
+pack [frame .r] -side right
+pack [set c2 [canvas .r.t -width $g(wid) -height $g(hei)]] -side top
+pack [frame .r.sep -height 5 -bg gray30] -side top -fill x
+pack [set c3 [canvas .r.b -width $g(wid) -height $g(hei)]] -side top
+
+proc drawline {tag col x0 y0 z0 x1 y1 z1} {
+    global g c0 c1 c2 c3
+    # canvas 0: from side (X is y, Y is -z)
+    set X0 $y0
+    set X1 $y1
+    set Y0 [expr $g(hei)-$z0]
+    set Y1 [expr $g(hei)-$z1]
+    $c0 create line $X0 $Y0 $X1 $Y1 -tag $tag -fill $col -width 5
+    
+    # canvas 1: from top (X is y Y is x)
+    set X0 $y0
+    set X1 $y1
+    set Y0 $x0
+    set Y1 $x1
+    $c1 create line $X0 $Y0 $X1 $Y1 -tag $tag -fill $col -width 5
+
+    # canvas 2: from front (X is x, Y is -z)
+    set X0 $x0
+    set X1 $x1
+    set Y0 [expr $g(hei)-$z0]
+    set Y1 [expr $g(hei)-$z1]
+    $c2 create line $X0 $Y0 $X1 $Y1 -tag $tag -fill $col -width 5
+
+    # canvas 3: view (X is y-.5x, Y is -z+.5x)
+    set X0 [expr 50+$y0 -.5*$x0]
+    set X1 [expr 50+$y1 -.5*$x1]
+    set Y0 [expr $g(hei)/2-$z0 +.5*$x0]
+    set Y1 [expr $g(hei)/2-$z1 +.5*$x1]
+    $c3 create line $X0 $Y0 $X1 $Y1 -tag $tag -fill $col -width 5
+
+}
+
+#### basic structure, calc the 6 coords, thus the 8 points, thus the 12 lines
+# 6 coords
+set x0 $g(x0)
+set x1 [expr $x0+$g(xsize)]
+set y0 $g(y0)
+set y1 [expr $y0+2*$g(ysize)]
+set z0 $g(z0)
+set z1 [expr $z0+$g(zsize)]
+
+# 8 points
+set p000 "$x0 $y0 $z0"
+set p100 "$x1 $y0 $z0"
+set p010 "$x0 $y1 $z0"
+set p110 "$x1 $y1 $z0"
+set p001 "$x0 $y0 $z1"
+set p101 "$x1 $y0 $z1"
+set p011 "$x0 $y1 $z1"
+set p111 "$x1 $y1 $z1"
+
+# lines: low rect
+eval drawline box black $p000 $p100
+eval drawline box black $p000 $p010
+eval drawline box black $p010 $p110
+eval drawline box black $p100 $p110
+# lines: hi rect
+eval drawline box black $p001 $p101
+eval drawline box black $p001 $p011
+eval drawline box black $p011 $p111
+eval drawline box black $p101 $p111
+# lines: risers
+eval drawline box black $p000 $p001
+eval drawline box black $p010 $p011
+eval drawline box black $p100 $p101
+eval drawline box black $p110 $p111
+
+foreach n {c0 c1 c2 c3} {[set $n] itemco box -width 3}
+#### motors:
+
+
+
+#### legs
+#
+#    0   2   4     +----> y
+#                  |
+#    1   3   5     V x
+#
+# motors:
+#    0: positive is front
+#    1: positive is down
+#    2: positive is down 
+
+# starting points
+for {set leg 0} {$leg<6} {incr leg} {
+    set g(l$leg:x0) [expr $g(x0) + ($leg%2)*$g(xsize)]
+    set g(l$leg:y0) [expr $g(y0) + ($leg/2)*$g(ysize)]
+    set g(l$leg:z0) $g(z0)
+}
+
+    # calculate x,y,z for our 4 points
+proc leg {l} {
+    global m g
+    set side [expr $l%2 ? 1 : -1]
+    set m0 [expr $m(${l}0)*$g(conv)]
+    set m1 [expr $m(${l}1)*$g(conv)]
+    set m2 [expr $m(${l}2)*$g(conv)]
+    # point 0 doesn't move
+    set x0 $g(l$l:x0)
+    set y0 $g(l$l:y0)
+    set z0 $g(l$l:z0)
+    # point 1 depends on motor 0
+    set x1 [expr $x0 + $side * cos($m0) * $g(la)]
+    set y1 [expr $y0 +         sin($m0) * $g(la)]
+    set z1 $z0
+    drawline leg red $x0 $y0 $z0 $x1 $y1 $z1
+    # point 2 depends on m0 and m1
+    set x2 [expr $x1 + $side * cos($m0) * cos($m1) * $g(lb)]
+    set y2 [expr $y1 +         sin($m0) * cos($m1) * $g(lb)]
+    set z2 [expr $z1 - sin($m1) * $g(lb)]
+    drawline leg green $x1 $y1 $z1 $x2 $y2 $z2
+    # point 3 depends on them all
+    set x3 [expr $x2 + $side * cos($m0) *  cos($m1+$m2) * $g(lc)]
+    set y3 [expr $y2 +         sin($m0) *  cos($m1+$m2) * $g(lc)]
+    set z3 [expr $z2 - sin($m1+$m2) * $g(lc)]
+    drawline leg blue $x2 $y2 $z2 $x3 $y3 $z3
+    
+    
+
+}
+
+
+proc legs {} {
+    global c0 c1 c2 c3
+    foreach n {c0 c1 c2 c3} {[set $n] delete leg}
+    for {set leg 0} {$leg<6} {incr leg} {
+	leg $leg
+    }
+}
+
+
+# read stdin
+update
+while {[gets stdin str]} {
+    array set m $str
+    legs
+    update
+}

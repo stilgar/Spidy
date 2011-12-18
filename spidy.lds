@@ -1,0 +1,25 @@
+OUTPUT_FORMAT("elf32-littlearm")
+OUTPUT_ARCH(arm)
+ENTRY(_spidy_start)
+
+regs = 0;
+jiffies = 0x40018008;
+
+SECTIONS
+{
+	. = 0x10000400;
+	.text : {
+		*(.boot)
+		*(.text)
+	}
+	.rodata : { *(.rodata) }
+	.data : { *(.data) }
+
+	.bss : {
+		. = ALIGN(16);
+		__bss_start = .;
+		*(.bss);
+		. = ALIGN(16);
+		__bss_end = .;
+	}
+}

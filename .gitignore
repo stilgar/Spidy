@@ -1,0 +1,10 @@
+*.bin
+*~
+*.o
+*.a
+*.ram
+temp/*
+test-motors/test-motors
+test-fifo/test-fifo
+sender
+

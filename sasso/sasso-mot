@@ -1,0 +1,17 @@
+#!/usr/bin/wish
+
+
+foreach L {0 1 2 3 4 5} {
+    foreach M {0 1 2} {
+	pack [set f [frame .f$L$M]] -side top
+	pack [label $f.l -text "l$L m $M"] -side left
+	set m$L$M 0
+	pack [scale $f.s -from -90 -to 90 -res 10 -orient h -var m$L$M \
+		  -command "newmot $L $M"]
+    }
+}
+
+proc newmot {L M v} {
+    puts "$L$M $v"
+    flush stdout
+}
