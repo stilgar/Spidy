@@ -1,12 +1,12 @@
+#include "../micro.h"
+#include "../link.h"
 #include "../spidy.h"
 #include "../hw.h"
-#include "../utils.h"
-#include "../io.h"
-#include "../gpio.h"
 
 #define COMMANDS_LEN 20
 
 int commands[COMMANDS_LEN]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
+extern uint32_t jiffies;
 
 void sleep(int n)
 {

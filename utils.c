@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "micro.h"
 
 /* convert n to characters in s */
 void itoa(int n, char s[])

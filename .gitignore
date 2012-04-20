@@ -3,8 +3,15 @@
 *.o
 *.a
 *.ram
+*.rom
 temp/*
 test-motors/test-motors
 test-fifo/test-fifo
+test-sender/test-sender
+test-frames/test-sender
 sender
+master
+sasso/i686/
+sasso/x86_64/
+.sender.log
 

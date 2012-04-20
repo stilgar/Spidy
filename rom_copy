@@ -1,0 +1,31 @@
+#!/bin/sh
+
+# Instead of mounting, it needs suite mtools. To this aim, I added
+# this line in my /etc/mtools.conf:
+#    drive c: file="/dev/disk/by-id/usb-NXP_LPC134X_IFLASH_ISP000000000-0:0" exclusive
+# And thus I can run the following commands:
+#          mdel c:firmware.bin
+#          mcopy spidy.rom.bin c:firmware.bin
+
+if [ -z $1 ]; then
+	echo "Usage: $0 <Cortex USB device>"
+	exit 0
+fi
+
+ROM="spidy.rom.bin"
+
+echo "Unmounting device"
+sudo umount $1
+
+echo "Removing old firmware"
+sudo mdel c:firmware.bin
+
+[ $? -eq 0 ] || exit 1
+
+echo "Copying new firmware"
+sudo mcopy ${ROM} c:firmware.bin
+
+[ $? -eq 0 ] || exit 1
+
+echo "Done successfully"
+exit 0

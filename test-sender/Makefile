@@ -1,8 +1,14 @@
 # Using thumb for version 7 ARM core:
-CFLAGS  = -march=armv7-m -mthumb -g -Wall -ffreestanding -ggdb -O2
-ASFLAGS = -march=armv7-m -mthumb -g -Wall
+CFLAGS  = -march=armv7-m -mthumb -Wall -ffreestanding -ggdb -O2
+ASFLAGS = -march=armv7-m -mthumb -Wall -ggdb
 # Use our own linker script
-LDFLAGS = -Bstatic -T ../spidy.lds
+RAMLDFLAGS = -Bstatic -T ../spidy-ram.lds
+ROMLDFLAGS = -Bstatic -T ../spidy-rom.lds
+
+# Host compiling:
+HCC = gcc
+HCFLAGS = -ggdb -Wall -O2
+HLDFLAGS = 
 
 # Cross compiling:
 AS              = $(CROSS_COMPILE)as
@@ -17,20 +23,13 @@ OBJDUMP         = $(CROSS_COMPILE)objdump
 
 BASE = spidy-test
 
-OBJ = ../boot.o ../io.o ../utils.o ../gpio.o
+OBJ = ../boot.o ../io.o ../utils.o ../gpio.o ../vectors.o
 OBJ += spidy-test.o
 
-EXE = $(BASE).ram
-BIN = $(BASE).ram.bin
-
-
-# Host compiling:
-HCC ?= gcc
-HCFLAGS = -ggdb -Wall -O2
-HLDFLAGS = 
+EXE = $(BASE).ram $(BASE).rom
+BIN = $(BASE).ram.bin $(BASE).rom.bin
 
 PROG = test-sender
-
 
 
 all: $(BIN) $(PROG)
@@ -41,9 +40,12 @@ $(PROG): $(patsubst %,%.c,$(PROG))
 
 ######### CROSS-COMPILING
 $(BASE).ram: $(OBJ)
-	$(LD) $(LDFLAGS) $^ -o $@
+	$(LD) $(RAMLDFLAGS) $^ -o $@
 
-%.bin: % tools
+$(BASE).rom: $(OBJ)
+	$(LD) $(ROMLDFLAGS) $^ -o $@
+
+%.bin: %
 	$(OBJCOPY) -O binary $* $@
 	@if echo $@ | grep -q rom.bin; then ./tools/fix-checksum $@; fi
 

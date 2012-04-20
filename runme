@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# To be more effective you have to add yourself to dialout group,
+# or to be more precise to Spidy device's group (/dev/ttyUSB0 - dialout)
+
+# Change to correct directory
+cd -P "$( dirname "${BASH_SOURCE[0]}" )"
+
+# Execution
+rm -f pipe_sim
+[ ! -p pipe_sim ] && mknod pipe_sim p && echo "Sim Pipe Created"
+rm -f pipe
+[ ! -p pipe ] && mknod pipe p && echo "Pipe Created"
+[ ! -p pipe ] && echo "Pipe can't be created!" && exit 1
+./sender $@ 2>&1 > .sender.log &
+sleep 2
+echo "Sender activated, starting Master"
+./master
+killall sender
+rm -f pipe_sim
+rm -f pipe

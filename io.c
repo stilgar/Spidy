@@ -1,7 +1,5 @@
-#include "spidy.h"
+#include "micro.h"
 #include "hw.h"
-#include "io.h"
-#include "utils.h"
 
 int framePeriod; /* period of frame */
 
@@ -92,26 +90,6 @@ int getc(void)
 	i =  regs[REG_U0RBR];
 	if (i == '\r') i = '\n';
 	if (i == 0xff) putc(i);
-	return i;
-}
-
-/* Read if there is a character in U0RBR */
-int pingc(void)
-{
-	int i = 0;
-	i =  regs[REG_U0RBR];
-
-	putc('\n');char tmp[80];itoa(i,tmp);putc('-');puts(tmp);
-
-	int b = regs[REG_U0IIR];
-//	b = (~0 & (~~0 >> 2) & (~~0 << 4));
-	itoa(b,tmp);putc('-');puts(tmp);
-
-//	int val1 = regs[REG_U0IIR];
-//	char tmp[80];itoa(val1,tmp);putc('*');puts(tmp);
-//	int val2 = regs[REG_U0IER];
-//	itoa(val2,tmp);putc('-');puts(tmp);putc('\n');
-
 	return i;
 }
 

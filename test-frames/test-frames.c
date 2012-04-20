@@ -1,8 +1,8 @@
+#include "../test_folders.h"
 #include "../spidy.h"
+#include "../micro.h"
+#include "../link.h"
 #include "../hw.h"
-#include "../utils.h"
-#include "../io.h"
-#include "../gpio.h"
 
 #define COM_LEN 15
 
@@ -193,7 +193,7 @@ int getBuffer()
 int saveBuffer () {
 	int f=0;
 	while (f<9 && commands[f]!=0) {
-		motors[saveIndex++]=commands[f++]-DEG_0;
+		motors[saveIndex++]=commands[f++]-DEG_NEG90;
 		saveIndex %= 18;
 	}
 	return f;

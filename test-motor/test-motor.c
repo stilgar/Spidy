@@ -1,8 +1,5 @@
-#include "../spidy.h"
+#include "../micro.h"
 #include "../hw.h"
-#include "../utils.h"
-#include "../io.h"
-#include "../gpio.h"
 
 int n, flag=0;
 

@@ -1,13 +1,18 @@
 # Using thumb for version 7 ARM core:
-CFLAGS  = -march=armv7-m -mthumb -g -Wall -ffreestanding -ggdb -O2
-ASFLAGS = -march=armv7-m -mthumb -g -Wall
+CFLAGS  = -march=armv7-m -mthumb -Wall -ffreestanding -ggdb -O2
+ASFLAGS = -march=armv7-m -mthumb -Wall -ggdb
+OMPFLAGS = -fopenmp
 # Use our own linker script
-LDFLAGS = -Bstatic -T spidy.lds
+RAMLDFLAGS = -Bstatic -T spidy-ram.lds
+ROMLDFLAGS = -Bstatic -T spidy-rom.lds
 
 # Host compiling:
 HCC = gcc
 HCFLAGS = -ggdb -Wall -O2
-HLDFLAGS =
+HLDFLAGS = -lrt -lm
+
+# Clean particular files
+CLEANSTUFF = pipe
 
 # Cross compiling:
 AS		= $(CROSS_COMPILE)as
@@ -20,29 +25,46 @@ STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
 OBJDUMP		= $(CROSS_COMPILE)objdump
 
-BASE = spidy
+BASE = micro
 
-OBJ = boot.o io.o utils.o gpio.o
-OBJ += spidy.o
+OBJ = boot.o io.o utils.o gpio.o vectors.o
+OBJ += micro.o
 
-EXE = $(BASE).ram
-BIN = $(BASE).ram.bin
+EXE = $(BASE).ram $(BASE).rom
+BIN = $(BASE).ram.bin $(BASE).rom.bin
 
-PROG = sender
+HCPROG = sender master
 
-
-all: $(BIN) $(patsubst sender%.c,sender%,$(wildcard sender*)) $(patsubst test-%.c,test-%,$(wildcard test-*)) tools 
+all: $(BIN) $(HCPROG) $(patsubst test-%.c,test-%,$(wildcard test-*)) tools
 
 ######### HOST COMPILING
-sender: sender.c
-	$(HCC) $(HCFLAGS) $^ $(HLDFLAGS) -o $@
+pc.o: pc.c
+	$(HCC) $(HCFLAGS) -c $^
 
-sender-thread: sender-thread.c
-	$(HCC) $(HCFLAGS) -fopenmp $^ $(HLDFLAGS) -o $@
+walk.o: walk.c
+	$(HCC) $(HCFLAGS) -c $^
+
+calibrate.o: calibrate.c
+	$(HCC) $(HCFLAGS) -c $^
+
+sender.o: sender.c
+	$(HCC) $(HCFLAGS) -c $^
+
+master.o: master.c
+	$(HCC) $(HCFLAGS) -c $^
+
+sender: sender.o pc.o
+	$(HCC) $^ $(HLDFLAGS) -o $@
+
+master: master.o pc.o walk.o calibrate.o
+	$(HCC) $^ $(HLDFLAGS) -o $@
 
 ######### CROSS-COMPILING
 $(BASE).ram: $(OBJ)
-	$(LD) $(LDFLAGS) $^ -o $@
+	$(LD) $(RAMLDFLAGS) $^ -o $@
+
+$(BASE).rom: $(OBJ)
+	$(LD) $(ROMLDFLAGS) $^ -o $@
 
 %.bin: % tools
 	$(OBJCOPY) -O binary $* $@
@@ -59,7 +81,7 @@ test-%: $(BIN)
 $(BIN): $(EXE)
 
 clean:
-	rm -f $(BIN) $(EXE) $(PROG) *.o *~ sender
+	rm -f $(BIN) $(EXE) $(HCPROG) $(CLEANSTUFF) *.o *~
 	$(MAKE) -C tools clean
 
 .PHONY: tools clean

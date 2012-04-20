@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../spidy.h"
 #include <unistd.h>
+#include "../link.h"
+#include "../spidy.h"
 
 #define DEV "/dev/ttyUSB0"
 
@@ -56,7 +57,7 @@ int main (int argc, char **argv)
 
 			/* building values and send it */
 			for (i=0;i<9;i++) {
-				out=DEG_0+f*18;
+				out=DEG_NEG90+f*18;
 				printf("%i ",out);
 				fputc(out, fw);
 			}
